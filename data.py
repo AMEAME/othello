@@ -1,4 +1,4 @@
-from othello import Othello, game_won
+from othello import Othello, won_game
 from config import *
 import numpy as np
 from functools import reduce
@@ -12,12 +12,12 @@ def enocode_serial(move):
   return arr
 
 def get_data():
-  records = [l.rstrip().split() for l in open('data.txt')]
+  records = [l.rstrip().split(',') for l in open('data.csv')]
   x_data = []
   y_data = []
   for i, r in enumerate(records):
-    print(i)
-    winner = game_won(r)
+    if i % 100 == 0: print(i)
+    winner = won_game(r)
     if winner == None: continue
     if winner == WHITE: winner = 0
     o = Othello()
@@ -31,7 +31,4 @@ def get_data():
 
 
 if __name__ == '__main__':
-  from time import time
-  s = time()
   get_data()
-  print('time: {}'.format(time() - s))

@@ -6,16 +6,16 @@ from functools import reduce
 
 DISC_MARK = {
     EMPTY: '-',
-    BLACK: 'x',
-    WHITE: 'o'
+    PLAYER: 'o',
+    OPPONENT: 'x'
 }
 
-DISC_INIT = [
-    [(4, 5), BLACK],
-    [(5, 4), BLACK],
-    [(4, 4), WHITE],
-    [(5, 5), WHITE]
-]
+DISC_INIT = (
+    ((4, 5), PLAYER),
+    ((5, 4), PLAYER),
+    ((4, 4), OPPONENT),
+    ((5, 5), OPPONENT)
+)
 
 
 class Othello(object):
@@ -23,7 +23,6 @@ class Othello(object):
     def __init__(self):
         self.init_board()
         self.valid_moves = []
-        self.now_playing = BLACK
 
     def init_board(self):
         self.board = [[EMPTY] * (OTHELLO_LEN) for _ in range(OTHELLO_LEN)]
@@ -34,28 +33,36 @@ class Othello(object):
     def update_valid_moves(self):
         return None
 
+    def switch_turn(self):
+        for row in range(OTHELLO_LEN):
+            for col in range(OTHELLO_LEN):
+                if self.board[row][col] == EMPTY:
+                    continue
+                self.board[row][col] = OPPONENT if \
+                    self.board[row][col] == PLAYER else PLAYER
+
     def flip(self, scope, calc_place):
         pos_flip = []
         for i in scope:
             place = calc_place(i)
             if self[place] == EMPTY:
                 return
-            if self[place] == self.now_playing:
+            if self[place] == PLAYER:
                 for p in pos_flip:
-                    self[p] = self.now_playing
+                    self[p] = PLAYER
                 return
             pos_flip.append(place)
 
     def make_move(self, move):
-        self[move] = self.now_playing
+        self[move] = PLAYER
         directions = {
             'right': [
                 range(OTHELLO_LEN - move[0]),
-                lambda i: (move[0] + i + 1, move[1])
+                lambda i: (move[0] + 1 + i, move[1])
             ],
             'bottom': [
                 range(OTHELLO_LEN - move[1]),
-                lambda i: (move[0], move[1] + i + 1)
+                lambda i: (move[0], move[1] + 1 + i)
             ],
             'left': [
                 range(move[0] - 1),
@@ -84,7 +91,8 @@ class Othello(object):
         }
         for dir in directions:
             self.flip(directions[dir][0], directions[dir][1])
-        self.now_playing = WHITE if self.now_playing == BLACK else BLACK
+
+        self.switch_turn()
 
     def __getitem__(self, disc_pos):
         if 1 <= disc_pos[0] <= OTHELLO_LEN and 1 <= disc_pos[1] <= OTHELLO_LEN:
@@ -105,25 +113,23 @@ class Othello(object):
         return string
 
 
-def game_won(record, display=False):
+def won_game(record, display=False):
     othello = Othello()
     for move in record:
         if move == '0':
             break
-        print(move)
         othello.make_move([int(move[0]), int(move[1])])
-        print(othello)
-    black_count = 0
+    PLAYER_count = 0
     for row in range(OTHELLO_LEN):
         for col in range(OTHELLO_LEN):
-            if othello[row, col] == BLACK:
-                black_count += 1
-    if black_count == 32:
+            if othello[row, col] == PLAYER:
+                PLAYER_count += 1
+    if PLAYER_count == 32:
         return None
     if display: print(othello)
-    return BLACK if black_count > 32 else WHITE
+    return PLAYER if PLAYER_count > 32 else OPPONENT
 
 
 if __name__ == '__main__':
     record = [l.rstrip().split(',') for l in open('data.csv')][0]
-    game_won(record, display=True)
+    won_game(record, display=True)
