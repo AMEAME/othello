@@ -1,2 +1,13 @@
 # othello
-othello game in python
+
+## othello.py
+- ゲームをプレイできること(main)
+- クラスで作成(othello)
+- 描画(CUI)
+- プレイヤーがコマを打てること(コマンド入力)
+  - 単体ではプレイヤーが操作
+- 棋譜を読み込んで勝者を返す
+
+## train_othello.py
+- プレイヤーに対して、最善の手を計算する
+

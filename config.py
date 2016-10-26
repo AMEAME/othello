@@ -1,0 +1,4 @@
+EMPTY = 0
+BLACK = 1
+WHITE = 2
+OTHELLO_LEN = 8
