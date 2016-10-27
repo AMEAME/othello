@@ -1,21 +1,7 @@
-# coding: utf-8
 from __future__ import print_function
 
 from config import *
 from functools import reduce
-
-DISC_MARK = {
-    EMPTY: '-',
-    PLAYER: 'o',
-    OPPONENT: 'x'
-}
-
-DISC_INIT = (
-    ((4, 5), PLAYER),
-    ((5, 4), PLAYER),
-    ((4, 4), OPPONENT),
-    ((5, 5), OPPONENT)
-)
 
 
 class Othello(object):
@@ -97,7 +83,7 @@ class Othello(object):
     def __getitem__(self, disc_pos):
         if 1 <= disc_pos[0] <= OTHELLO_LEN and 1 <= disc_pos[1] <= OTHELLO_LEN:
             return self.board[disc_pos[1] - 1][disc_pos[0] - 1]
-        return 0
+        return EMPTY
 
     def __setitem__(self, disc_pos, value):
         self.board[disc_pos[1] - 1][disc_pos[0] - 1] = value
