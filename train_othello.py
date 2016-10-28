@@ -8,8 +8,6 @@ import tensorflow as tf
 import input_data
 import data
 
-FLAGS = None
-
 
 def main(_):
   # Create the model
