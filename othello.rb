@@ -15,17 +15,18 @@ DISK_MARK = {
 class Board
   extend Forwardable
   def_delegators :@cells, :each, :map, :map!
+  attr_reader :cells
 
   def initialize(board=nil)
-    unless board.nil?
+    if board.nil?
+      @cells = Array.new(8) {[0] * 8 }
+      @cells[3][4] = PLAYER
+      @cells[4][3] = PLAYER
+      @cells[3][3] = OPPONENT
+      @cells[4][4] = OPPONENT
+    else
       @cells = board.dup
-      return
     end
-    @cells = Array.new(8) { [0] * 8 }
-    @cells[3][4] = PLAYER
-    @cells[4][3] = PLAYER
-    @cells[3][3] = OPPONENT
-    @cells[4][4] = OPPONENT
   end
 
   def []=(disc_row, disc_col, value)
@@ -52,10 +53,13 @@ end
 
 
 class Othello
+  attr_reader :board
+
   def initialize
     @board = Board.new
     @valid_moves = []
     update_valid_moves
+    @valid_moves.each {|e| @board[*e] = VALID }
   end
 
   def make_move(move)
@@ -96,10 +100,10 @@ class Othello
   private
   def flip_disks(board, move)
     board[*move] = PLAYER
-    right = 1..(9 - move[0])
-    bottom = 1..(9 - move[1])
-    left = 1..(move[0])
-    top = 1..(move[1])
+    right = 1..(8 - move[0])
+    bottom = 1..(8 - move[1])
+    left = 1..(move[0] - 1)
+    top = 1..(move[1] - 1)
     directions = {
       right: [
         right, lambda {|i| [move[0] + i, move[1]] }
@@ -132,37 +136,47 @@ class Othello
     }
     directions.reduce([]) do |valid_moves, (dir, (range, calc_place))|
       valid_moves + get_flip_positions(board, range, calc_place)
-    end.compact.reject(&:empty?).uniq
+    end.reject(&:empty?).uniq
   end
 
-  def get_flip_positions(board, scope, calc_place)
-    scope.reduce([]) do |pos_flip, i|
+  def get_flip_positions(board, range, calc_place)
+    range.reduce([]) do |pos_flip, i|
       place = calc_place.call(i)
-      return [] if board[*place] == EMPTY
+      break if board[*place] == EMPTY
       if board[*place] == PLAYER
-        pos_flip.each do |p|
-          board[*p] = PLAYER
-        end
+        pos_flip.each {|p| board[*p] = PLAYER }
         return pos_flip
       end
       pos_flip << place
     end
+    []
   end
 end
 
+
+def serialize_board_str(board)
+  board.cells.reduce('') do |str, row|
+    str + row.reduce('') {|a, e| a + e.to_s + ' ' }
+  end
+end
 
 def main
   records = File.readlines('data.csv').map {|l| l.chomp.split(',') }
-  othello = Othello.new
+  output_data = []
   records.each_with_index do |record, i|
+    othello = Othello.new
     record.each do |r|
       break if r == '0'
+      output_data << serialize_board_str(othello.board) + r
       othello.make_move(r.split('').map(&:to_i))
     end
-    puts i if i % 1000 == 0
+    puts "#{i}: \n#{othello}" if i % 100 == 0
   end
+  File.open('othello.csv', 'w') {|f| output_data.each {|d| f.puts d } }
 end
 
 if __FILE__ == $0
+  s = Time.now
   main
+  puts "#{Time.now - s}s"
 end
