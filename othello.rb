@@ -147,18 +147,24 @@ end
 
 def serialize_board_str(board)
   board.cells.reduce('') do |str, row|
-    str + row.reduce('') {|a, e| a + e.to_s + ' ' }
+    str + row.reduce('') {|a, e| a + "#{e}," }
   end
 end
 
 def main
+  encoding = lambda do |s|
+    cells = [0] * 64
+    pos = s.split('').map(&:to_i)
+    cells[(pos[0] - 1) * 8 + pos[1] - 1] = 1
+    cells.reduce('') {|a, e| a + "#{e}," }
+  end
   records = File.readlines('data.csv').map {|l| l.chomp.split(',') }
   output_data = []
   records.each_with_index do |record, i|
     othello = Othello.new
     record.each do |r|
       break if r == '0'
-      output_data << serialize_board_str(othello.board) + r
+      output_data << serialize_board_str(othello.board) + encoding.call(r)
       othello.make_move(r.split('').map(&:to_i))
     end
     puts "#{i}: \n#{othello}" if i % 100 == 0
