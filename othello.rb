@@ -59,7 +59,6 @@ class Othello
     @board = Board.new
     @valid_moves = []
     update_valid_moves
-    @valid_moves.each {|e| @board[*e] = VALID }
   end
 
   def make_move(move)
@@ -67,7 +66,6 @@ class Othello
     flip_disks(@board, move)
     switch_turn
     update_valid_moves
-    @valid_moves.each {|e| @board[*e] = VALID }
     switch_turn if @valid_moves.empty?
   end
 
@@ -82,6 +80,7 @@ class Othello
       end
     end
     @valid_moves.uniq!
+    @valid_moves.each {|e| @board[*e] = VALID }
   end
 
   def switch_turn
@@ -100,23 +99,15 @@ class Othello
   private
   def flip_disks(board, move)
     board[*move] = PLAYER
-    right = 1..(8 - move[0])
+    right  = 1..(8 - move[0])
     bottom = 1..(8 - move[1])
-    left = 1..(move[0] - 1)
-    top = 1..(move[1] - 1)
+    left   = 1..(move[0] - 1)
+    top    = 1..(move[1] - 1)
     directions = {
-      right: [
-        right, lambda {|i| [move[0] + i, move[1]] }
-      ],
-      bottom: [
-        bottom, lambda {|i| [move[0], move[1] + i] }
-      ],
-      left: [
-        left, lambda {|i| [move[0] - i, move[1]] }
-      ],
-      top: [
-        top, lambda {|i| [move[0], move[1] - i] }
-      ],
+      right:  [right,  lambda {|i| [move[0] + i, move[1]]     }],
+      bottom: [bottom, lambda {|i| [move[0],     move[1] + i] }],
+      left:   [left,   lambda {|i| [move[0] - i, move[1]]     }],
+      top:    [top,    lambda {|i| [move[0],     move[1] - i] }],
       top_left: [
         [top, left].min_by {|r| r.size },
         lambda {|i| [move[0] - i, move[1] - i] }
