@@ -104,41 +104,29 @@ class Othello
     left   = 1..(move[0] - 1)
     top    = 1..(move[1] - 1)
     directions = {
-      right:  [right,  lambda {|i| [move[0] + i, move[1]]     }],
-      bottom: [bottom, lambda {|i| [move[0],     move[1] + i] }],
-      left:   [left,   lambda {|i| [move[0] - i, move[1]]     }],
-      top:    [top,    lambda {|i| [move[0],     move[1] - i] }],
-      top_left: [
-        [top, left].min_by {|r| r.size },
-        lambda {|i| [move[0] - i, move[1] - i] }
-      ],
-      bottom_right: [
-        [bottom, right].min_by {|r| r.size },
-        lambda {|i| [move[0] + i, move[1] + i] }
-      ],
-      top_right: [
-        [top, right].min_by {|r| r.size },
-        lambda {|i| [move[0] + i, move[1] - i] }
-      ],
-      bottom_left: [
-        [bottom, left].min_by {|r| r.size },
-        lambda {|i| [move[0] - i, move[1] + i] }
-      ]
+      right:  [right,  [ 1,  0]],
+      bottom: [bottom, [ 0,  1]],
+      left:   [left,   [-1,  0]],
+      top:    [top,    [ 0, -1]],
+      top_left:     [[top, left].min_by {|r| r.size },     [-1, -1]],
+      bottom_right: [[bottom, right].min_by {|r| r.size }, [ 1,  1]],
+      top_right:    [[top, right].min_by {|r| r.size },    [ 1, -1]],
+      bottom_left:  [[bottom, left].min_by {|r| r.size },  [-1,  1]]
     }
-    directions.reduce([]) do |valid_moves, (dir, (range, calc_place))|
-      valid_moves + get_flip_positions(board, range, calc_place)
+    directions.reduce([]) do |valid_moves, (dir, (range, pos))|
+      valid_moves + get_flip_positions(board, range, move, *pos)
     end.reject(&:empty?).uniq
   end
 
-  def get_flip_positions(board, range, calc_place)
+  def get_flip_positions(board, range, move, x, y)
     range.reduce([]) do |pos_flip, i|
-      place = calc_place.call(i)
-      break if board[*place] == EMPTY
-      if board[*place] == PLAYER
+      pos = [move[0] + x * i, move[1] + y * i]
+      break if board[*pos] == EMPTY
+      if board[*pos] == PLAYER
         pos_flip.each {|p| board[*p] = PLAYER }
         return pos_flip
       end
-      pos_flip << place
+      pos_flip << pos
     end
     []
   end
@@ -147,29 +135,30 @@ end
 
 def serialize_board_str(board)
   board.cells.reduce('') do |str, row|
-    str + row.reduce('') {|a, e| a + "#{e}," }
+    str + row.reduce('') {|a, e| a + e.to_s }
   end
 end
 
 def main
-  encoding = lambda do |s|
-    cells = [0] * 64
-    pos = s.split('').map(&:to_i)
-    cells[(pos[0] - 1) * 8 + pos[1] - 1] = 1
-    cells.reduce('') {|a, e| a + "#{e}," }
+  files = Dir.glob('WTH/*')
+  records = []
+  files.each do |f|
+    data = File.open(f, 'rb').each_byte.map { |e| e }
+    data[16..data.size - 1].each_slice(68).map {|e| e[8..67] }.each {|g| records << g }
   end
-  records = File.readlines('data.csv').map {|l| l.chomp.split(',') }
+
+  encoding = lambda {|s| (s / 10 - 1) * 8 + s % 10 - 1 }
   output_data = []
   records.each_with_index do |record, i|
     othello = Othello.new
     record.each do |r|
-      break if r == '0'
-      output_data << serialize_board_str(othello.board) + encoding.call(r)
-      othello.make_move(r.split('').map(&:to_i))
+      break if r == 0
+      output_data << serialize_board_str(othello.board) + " #{encoding.call(r)}"
+      othello.make_move([r / 10, r % 10])
     end
     puts "#{i}: \n#{othello}" if i % 100 == 0
   end
-  File.open('othello.csv', 'w') {|f| output_data.each {|d| f.puts d } }
+  File.open('othello.data', 'w') {|f| output_data.each {|d| f.puts d } }
 end
 
 if __FILE__ == $0

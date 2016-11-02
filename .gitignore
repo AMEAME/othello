@@ -1,5 +1,7 @@
 .vscode/
-result/
 __pycache__/
+result/
+WTH/
 *.py[cod]
-*.csv
+*.data
+*.zip
