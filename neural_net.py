@@ -1,11 +1,12 @@
-import chainer
+from chainer import Chain, report
 import chainer.functions as F
 import chainer.links as L
 
 import re
 
 
-class MLP(chainer.Chain):
+
+class MLP(Chain):
   def __init__(self, n_units):
     create_layers = "super(MLP, self).__init__("
     for i, units in enumerate(n_units):
@@ -21,3 +22,15 @@ class MLP(chainer.Chain):
     for layer in layers[:-1]:
       layer_out = F.relu(layer(layer_out))
     return layers[-1](layer_out)
+
+
+class Classifier(Chain):
+  def __init__(self, predictor):
+    super(Classifier, self).__init__(predictor=predictor)
+
+  def __call__(self, x, t):
+    y = self.predictor(x)
+    loss = F.softmax_cross_entropy(y, t)
+    accuracy = F.accuracy(y, t)
+    report({'loss': loss, 'accuracy': accuracy}, self)
+    return loss

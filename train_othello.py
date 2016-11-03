@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 from __future__ import print_function
 import argparse
+import numpy as np
 
 import chainer
 import chainer.functions as F
 import chainer.links as L
-from chainer import training
+from chainer import training, Variable, cuda
 from chainer.training import extensions
 
-from neural_net import MLP
+from neural_net import MLP, Classifier
 from data import othello_data
 
 
@@ -26,7 +27,7 @@ def main():
                       help='Resume the training from snapshot')
   args = parser.parse_args()
 
-  unit = [15000, 15000, 64]
+  unit = [100, 100, 64]
 
   print('GPU: {}'.format(args.gpu))
   print('# unit: {}'.format(unit))
@@ -37,7 +38,7 @@ def main():
   # Set up a neural network to train
   # Classifier reports softmax cross entropy loss and accuracy at every
   # iteration, which will be used by the PrintReport extension below.
-  model = L.Classifier(MLP(unit))
+  model = Classifier(MLP(unit))
   if args.gpu >= 0:
     chainer.cuda.get_device(args.gpu).use()  # Make a specified GPU current
     model.to_gpu()  # Copy the model to the GPU
@@ -101,7 +102,9 @@ def main():
   X1_[4 * 8 + 5] = 3
   X1_[5 * 8 + 4] = 3
 
-  X1 = np.array(X1_, dtype=np.float32)
+  X1 = np.array([X1_], dtype=np.float32)
+  if args.gpu >= 0:
+    X1 = cuda.to_gpu(X1, device=args.gpu)
   y1 = F.softmax(model.predictor(X1))
   print("y1 = " + str(y1.data.argmax(1)) + '\n')
 
@@ -109,4 +112,4 @@ if __name__ == '__main__':
   import time
   s = time.time()
   main()
-  print("{}s".format(time.time - s))
+  print("{}s".format(time.time() - s))

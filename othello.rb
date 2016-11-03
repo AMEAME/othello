@@ -147,9 +147,10 @@ def main
     data[16..data.size - 1].each_slice(68).map {|e| e[8..67] }.each {|g| records << g }
   end
 
+
   encoding = lambda {|s| (s / 10 - 1) * 8 + s % 10 - 1 }
   output_data = []
-  records.each_with_index do |record, i|
+  records[0, 200].each_with_index do |record, i|
     othello = Othello.new
     record.each do |r|
       break if r == 0

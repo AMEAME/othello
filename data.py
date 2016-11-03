@@ -17,3 +17,5 @@ def othello_data():
   _y = np.array(_y, dtype=np.int32)
   return (TupleDataset(x[:-100], _y[:-100]),
           TupleDataset(x[-100:], _y[-100:]))
+if __name__ == '__main__':
+  othello_data()
