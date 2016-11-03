@@ -157,7 +157,7 @@ def make_othello_recoad():
     print(othello)
 
 def main():
-  unit = [100, 100, 64]
+  unit = [1000, 1000, 64]
   model = Classifier(MLP(unit))
   chainer.cuda.get_device(0).use()
   model.to_gpu()
