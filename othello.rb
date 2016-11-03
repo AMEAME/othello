@@ -143,19 +143,19 @@ def main
   files = Dir.glob('WTH/*')
   records = []
   files.each do |f|
-    data = File.open(f, 'rb').each_byte.map { |e| e }
+    data = File.open(f, 'rb').each_byte.map {|e| e }
     data[16..data.size - 1].each_slice(68).map {|e| e[8..67] }.each {|g| records << g }
   end
-
-
   encoding = lambda {|s| (s / 10 - 1) * 8 + s % 10 - 1 }
   output_data = []
-  records[0, 200].each_with_index do |record, i|
+  [records[0]].each_with_index do |record, i|
     othello = Othello.new
     record.each do |r|
       break if r == 0
+      puts r
       output_data << serialize_board_str(othello.board) + " #{encoding.call(r)}"
       othello.make_move([r / 10, r % 10])
+      puts othello
     end
     puts "#{i}: \n#{othello}" if i % 100 == 0
   end

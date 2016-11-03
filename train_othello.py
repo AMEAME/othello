@@ -11,6 +11,7 @@ from chainer.training import extensions
 
 from neural_net import MLP, Classifier
 from data import othello_data
+from othello import Othello
 
 
 def main():
@@ -25,9 +26,11 @@ def main():
                       help='Directory to output the result')
   parser.add_argument('--resume', '-r', default='',
                       help='Resume the training from snapshot')
+  parser.add_argument('--train', '-t', type=int, default=0,
+                      help='train flag')
   args = parser.parse_args()
 
-  unit = [100, 100, 64]
+  unit = [1000, 1000, 64]
 
   print('GPU: {}'.format(args.gpu))
   print('# unit: {}'.format(unit))
@@ -35,78 +38,46 @@ def main():
   print('# epoch: {}'.format(args.epoch))
   print('')
 
-  # Set up a neural network to train
-  # Classifier reports softmax cross entropy loss and accuracy at every
-  # iteration, which will be used by the PrintReport extension below.
   model = Classifier(MLP(unit))
   if args.gpu >= 0:
-    chainer.cuda.get_device(args.gpu).use()  # Make a specified GPU current
-    model.to_gpu()  # Copy the model to the GPU
-
-  # Setup an optimizer
+    chainer.cuda.get_device(args.gpu).use()
+    model.to_gpu()
   optimizer = chainer.optimizers.Adam()
   optimizer.setup(model)
 
-  # Load the othello dataset
-  train, test = othello_data()
-
-  train_iter = chainer.iterators.SerialIterator(train, args.batchsize)
-  test_iter = chainer.iterators.SerialIterator(test, args.batchsize,
-                                               repeat=False, shuffle=False)
-
-  # Set up a trainer
-  updater = training.StandardUpdater(train_iter, optimizer, device=args.gpu)
-  trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)
-
-  # Evaluate the model with the test dataset for each epoch
-  trainer.extend(extensions.Evaluator(test_iter, model, device=args.gpu))
-
-  # Dump a computational graph from 'loss' variable at the first iteration
-  # The "main" refers to the target link of the "main" optimizer.
-  trainer.extend(extensions.dump_graph('main/loss'))
-
-  # Take a snapshot at each epoch
-  trainer.extend(extensions.snapshot(), trigger=(args.epoch, 'epoch'))
-
-  # Write a log of evaluation statistics for each epoch
-  trainer.extend(extensions.LogReport())
-
-  # Print selected entries of the log to stdout
-  # Here "main" refers to the target link of the "main" optimizer again, and
-  # "validation" refers to the default name of the Evaluator extension.
-  # Entries other than 'epoch' are reported by the Classifier link, called by
-  # either the updater or the evaluator.
-  trainer.extend(extensions.PrintReport(
-    ['epoch', 'main/loss', 'validation/main/loss',
-      'main/accuracy', 'validation/main/accuracy']))
-
-  # Print a progress bar to stdout
-  trainer.extend(extensions.ProgressBar())
-
   if args.resume:
-    # Resume from a snapshot
-    chainer.serializers.load_npz(args.resume, trainer)
-  # Run the training
-  trainer.run()
-  chainer.serializers.save_npz('othello_model.npz', model)
+    chainer.serializers.load_npz(args.resume, model)
 
-  X1_ = [0] * 64
+  if args.train == True:
+    train, test = othello_data()
+    train_iter = chainer.iterators.SerialIterator(train, args.batchsize)
+    test_iter = chainer.iterators.SerialIterator(test, args.batchsize,
+                                                repeat=False, shuffle=False)
+    updater = training.StandardUpdater(train_iter, optimizer, device=args.gpu)
+    trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)
+    trainer.extend(extensions.Evaluator(test_iter, model, device=args.gpu))
+    trainer.extend(extensions.dump_graph('main/loss'))
+    trainer.extend(extensions.snapshot(), trigger=(args.epoch, 'epoch'))
+    trainer.extend(extensions.LogReport())
+    trainer.extend(extensions.PrintReport(
+      ['epoch', 'main/loss', 'validation/main/loss',
+        'main/accuracy', 'validation/main/accuracy']))
+    trainer.extend(extensions.ProgressBar())
+    trainer.run()
+    chainer.serializers.save_npz('othello_model.npz', model)
 
-  X1_[3 * 8 + 4] = 1
-  X1_[4 * 8 + 3] = 1
-  X1_[3 * 8 + 3] = 2
-  X1_[4 * 8 + 4] = 2
-
-  X1_[3 * 8 + 2] = 3
-  X1_[2 * 8 + 3] = 3
-  X1_[4 * 8 + 5] = 3
-  X1_[5 * 8 + 4] = 3
-
-  X1 = np.array([X1_], dtype=np.float32)
-  if args.gpu >= 0:
-    X1 = cuda.to_gpu(X1, device=args.gpu)
-  y1 = F.softmax(model.predictor(X1))
-  print("y1 = " + str(y1.data.argmax(1)) + '\n')
+  othello = Othello()
+  for _ in range(60):
+    print(othello)
+    X1 = np.array([othello.board.cells], dtype=np.float32)
+    if args.gpu >= 0:
+      X1 = cuda.to_gpu(X1, device=args.gpu)
+    y = F.softmax(model.predictor(X1))
+    y_ = int(y.data.argmax(1)[0])
+    y = y_ // 8 * 10 + y_ % 8 + 11
+    print("y = {}\n".format(y))
+    move = int(input('move: '))
+    othello.make_move((move // 10, move % 10))
 
 if __name__ == '__main__':
   import time
