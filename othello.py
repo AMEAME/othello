@@ -157,10 +157,10 @@ def make_othello_recoad():
     print(othello)
 
 def main():
-  unit = [100, 100, 64]
+  unit = [1000, 1000, 64]
   model = Classifier(MLP(unit))
-  chainer.cuda.get_device(0).use()
-  model.to_gpu()
+  # chainer.cuda.get_device(0).use()
+  # model.to_gpu()
   optimizer = chainer.optimizers.Adam()
   optimizer.setup(model)
   chainer.serializers.load_npz('othello_model.npz', model)
@@ -169,7 +169,7 @@ def main():
   for _ in range(60):
     print(othello)
     X1 = np.array([othello.board.cells], dtype=np.float32)
-    X1 = cuda.to_gpu(X1, device=0)
+    # X1 = cuda.to_gpu(X1, device=0)
     y = F.softmax(model.predictor(X1))
     y_ = int(y.data.argmax(1)[0])
     y = y_ // 8 * 10 + y_ % 8 + 11
