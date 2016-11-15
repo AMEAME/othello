@@ -24,7 +24,7 @@ def main():
                       help='GPU ID (negative value indicates CPU)')
   parser.add_argument('--out', '-o', default='result',
                       help='Directory to output the result')
-  parser.add_argument('--resume', '-r', default='',
+  parser.add_argument('--resume', '-r', default='othello_model.npz',
                       help='Resume the training from snapshot')
   parser.add_argument('--train', '-t', type=int, default=0,
                       help='train flag')
@@ -45,8 +45,7 @@ def main():
   optimizer = chainer.optimizers.Adam()
   optimizer.setup(model)
 
-  if args.resume:
-    chainer.serializers.load_npz(args.resume, model)
+  chainer.serializers.load_npz(args.resume, model)
 
   if args.train == True:
     train, test = othello_data()

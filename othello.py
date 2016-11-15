@@ -19,15 +19,15 @@ VALID    = 3
 
 DISC_MARK = {
   EMPTY   : '-',
-  PLAYER  : 'o',
-  OPPONENT: 'x',
-  VALID   : '.'
+  PLAYER  : 'O',
+  OPPONENT: 'X',
+  VALID   : 'v'
 }
 
 class Board():
   def __init__(self, cells=None):
     if cells is None:
-      self.cells = [[EMPTY] * 8 for _ in range(8)]
+      self.cells = np.zeros(64).reshape([8, 8])
       self[4, 5] = PLAYER
       self[5, 4] = PLAYER
       self[4, 4] = OPPONENT
@@ -64,17 +64,17 @@ class Board():
 
 class Othello():
   def __init__(self):
-    self = Board()
+    self.board = Board()
     self.valid_moves = []
     self.update_valid_moves()
 
   def make_move(self, move):
     for m in self.valid_moves:
-      self[m] = EMPTY
-    self._flip_disks(self, move)
+      self.board[m] = EMPTY
+    self._flip_disks(self.board, move)
     self.board.switch_turn()
     self.update_valid_moves()
-    
+
     if not self.valid_moves:
       self.board.switch_turn()
       self.update_valid_moves()
@@ -83,28 +83,28 @@ class Othello():
     del self.valid_moves[:]
     for row in range(1, 9):
       for col in range(1, 9):
-        if self[row, col] == EMPTY:
-          board = self.clone()
+        if self.board[row, col] == EMPTY:
+          board = self.board.clone()
           if self._flip_disks(board, (row, col)):
             self.valid_moves.append((row, col))
     self.valid_moves = self._uniq(self.valid_moves)
     for m in self.valid_moves:
-      self[m] = VALID
+      self.board[m] = VALID
 
   def _flip_disks(self, board, move):
     board[move] = PLAYER
-    directions = {
-      'right' : (9 - move[0], ( 1,  0)),
-      'bottom': (9 - move[1], ( 0,  1)),
-      'left'  : (move[0],     (-1,  0)),
-      'top'   : (move[1],     ( 0, -1)),
-      'top_left'    : (min(move[1],     move[0]),     (-1, -1)),
-      'bottom_right': (min(9 - move[1], 9 - move[0]), ( 1,  1)),
-      'top_right'   : (min(move[1],     9 - move[0]), ( 1, -1)),
-      'bottom_left' : (min(9 - move[1], move[0]),     (-1,  1))
-    }
+    directions = (
+      (9 - move[0], ( 1,  0)),
+      (9 - move[1], ( 0,  1)),
+      (move[0],     (-1,  0)),
+      (move[1],     ( 0, -1)),
+      (min(move[1],     move[0]),     (-1, -1)),
+      (min(9 - move[1], 9 - move[0]), ( 1,  1)),
+      (min(move[1],     9 - move[0]), ( 1, -1)),
+      (min(9 - move[1], move[0]),     (-1,  1))
+    )
     pos_flips = []
-    for stop, (x, y) in directions.values():
+    for stop, (x, y) in directions:
       pos_flips.append(self._get_flip_positions(board, stop, move, x, y))
     return self._uniq(pos_flips)
 
@@ -125,7 +125,7 @@ class Othello():
     return [e for e in arr if e]
 
   def __str__(self):
-    return str(self)
+    return str(self.board)
 
 def won_game(record, display=False):
   othello = Othello()
@@ -150,12 +150,16 @@ def make_othello_recoad():
       l = l[16:]
       for e in [l[i: i + 68] for i in range(0, len(l), 68)]:
         records.append(e[8:])
-  for record in records[0:10]:
+  for i, record in enumerate(records[:1]):
     othello = Othello()
+    print(othello)
+    if record == b'' or record[0] != 56: continue
     for move in record:
       if move == 0: break
+      print(move)
       othello.make_move([move // 10, move % 10])
-    print(othello)
+      print(othello)
+    if i % 100 == 0: print(i)
 
 
 def main():
@@ -181,5 +185,9 @@ def main():
     if move in othello.valid_moves:
       othello.make_move(move)
 
+
 if __name__ == '__main__':
-  main()
+  from time import time
+  s = time()
+  make_othello_recoad()
+  print(time() - s)
