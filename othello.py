@@ -12,31 +12,37 @@ from chainer.training import extensions
 from neural_net import MLP, Classifier
 
 
-EMPTY = 0
-PLAYER = 1
+EMPTY    = 0
+PLAYER   = 1
 OPPONENT = 2
-VALID = 3
+VALID    = 3
 
 DISC_MARK = {
-  EMPTY: '-',
-  PLAYER: 'o',
+  EMPTY   : '-',
+  PLAYER  : 'o',
   OPPONENT: 'x',
-  VALID: '.'
+  VALID   : '.'
 }
 
 class Board():
-  def __init__(self, board=None):
-    if board is not None:
-      self.cells = board.copy()
-      return
-    self.cells = [[EMPTY] * (8) for _ in range(8)]
-    self[4, 5] = PLAYER
-    self[5, 4] = PLAYER
-    self[4, 4] = OPPONENT
-    self[5, 5] = OPPONENT
+  def __init__(self, cells=None):
+    if cells is None:
+      self.cells = [[EMPTY] * 8 for _ in range(8)]
+      self[4, 5] = PLAYER
+      self[5, 4] = PLAYER
+      self[4, 4] = OPPONENT
+      self[5, 5] = OPPONENT
+    else:
+      self.cells = cells
 
-  def copy(self):
-    return deepcopy(self.cells)
+  def clone(self):
+    return Board(deepcopy(self.cells))
+
+  def switch_turn(self):
+    for row in range(1, 9):
+      for col in range(1, 9):
+        if self[row, col] == EMPTY: continue
+        self[row, col] = OPPONENT if self[row, col] == PLAYER else PLAYER
 
   def __getitem__(self, disc_pos):
     if (1 <= disc_pos[0] <= 8) and (1 <= disc_pos[1] <= 8):
@@ -58,36 +64,32 @@ class Board():
 
 class Othello():
   def __init__(self):
-    self.board = Board()
+    self = Board()
     self.valid_moves = []
     self.update_valid_moves()
 
   def make_move(self, move):
     for m in self.valid_moves:
-      self.board[m] = EMPTY
-    self._flip_disks(self.board, move)
-    self.switch_turn()
+      self[m] = EMPTY
+    self._flip_disks(self, move)
+    self.board.switch_turn()
     self.update_valid_moves()
+    
     if not self.valid_moves:
-      self.switch_turn()
+      self.board.switch_turn()
+      self.update_valid_moves()
 
   def update_valid_moves(self):
     del self.valid_moves[:]
     for row in range(1, 9):
       for col in range(1, 9):
-        if self.board[row, col] == EMPTY:
-          board = Board(self.board)
+        if self[row, col] == EMPTY:
+          board = self.clone()
           if self._flip_disks(board, (row, col)):
             self.valid_moves.append((row, col))
     self.valid_moves = self._uniq(self.valid_moves)
     for m in self.valid_moves:
-      self.board[m] = VALID
-
-  def switch_turn(self):
-    for row in range(1, 9):
-      for col in range(1, 9):
-        if self.board[row, col] == EMPTY: continue
-        self.board[row, col] = OPPONENT if self.board[row, col] == PLAYER else PLAYER
+      self[m] = VALID
 
   def _flip_disks(self, board, move):
     board[move] = PLAYER
@@ -123,13 +125,12 @@ class Othello():
     return [e for e in arr if e]
 
   def __str__(self):
-    return str(self.board)
+    return str(self)
 
 def won_game(record, display=False):
   othello = Othello()
   for move in record:
-    if move == '0':
-      break
+    if move == '0': break
     othello.make_move([int(move[0]), int(move[1])])
   PLAYER_count = 0
   for row in range(8):
@@ -156,6 +157,7 @@ def make_othello_recoad():
       othello.make_move([move // 10, move % 10])
     print(othello)
 
+
 def main():
   unit = [1000, 1000, 64]
   model = Classifier(MLP(unit))
@@ -175,7 +177,9 @@ def main():
     y = y_ // 8 * 10 + y_ % 8 + 11
     print("y = {}\n".format(y))
     move = int(input('move: '))
-    othello.make_move((move // 10, move % 10))
+    move = (move // 10, move % 10)
+    if move in othello.valid_moves:
+      othello.make_move(move)
 
 if __name__ == '__main__':
   main()
