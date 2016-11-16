@@ -9,5 +9,6 @@ WTH/
 
 *.py[cod]
 *.data
+*.csv
 *.zip
 *.c
