@@ -1,7 +1,13 @@
 .vscode/
+.DS_Store/
+
 __pycache__/
+build/
+
 result/
 WTH/
+
 *.py[cod]
 *.data
 *.zip
+*.c
